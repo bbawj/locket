@@ -107,4 +107,10 @@ menu "Example Configuration"
             bool "WAPI PSK"
     endchoice
 
+    config BROKER_URL
+        string "MQTT Broker URL"
+        default ""
+        help
+            MQTT Broker URL
+
 endmenu

@@ -1,6 +1,7 @@
 #include "esp_camera.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "mqtt_client.h"
 #include <stdint.h>
 
 // WROVER-KIT PIN Map
@@ -74,7 +75,7 @@ esp_err_t camera_init() {
   return ESP_OK;
 }
 
-esp_err_t camera_capture(uint8_t *out) {
+esp_err_t camera_capture(esp_mqtt_client_handle_t client, uint8_t *out) {
   esp_err_t res = ESP_OK;
   camera_fb_t *fb = NULL;
 
@@ -87,6 +88,13 @@ esp_err_t camera_capture(uint8_t *out) {
 
   size_t jpg_buf_len = fb->len;
   uint8_t *jpg_buf = fb->buf;
+  int ret = esp_mqtt_client_publish(client, "/jpeg", (char *)jpg_buf,
+                                    jpg_buf_len, 0, 0);
+  if (ret == -1) {
+    ESP_LOGE(TAG, "Failed to publish");
+  } else if (ret == -2) {
+    ESP_LOGE(TAG, "Failed to publish: outbox full");
+  }
   if (!jpg2rgb565(jpg_buf, jpg_buf_len, out, JPG_SCALE_NONE)) {
     ESP_LOGE(TAG, "JPG to RGB failed");
     res = ESP_FAIL;

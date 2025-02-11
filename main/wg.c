@@ -15,6 +15,7 @@
 #include <time.h>
 
 #include "sync_time.h"
+#include "wg.h"
 #include <esp_wireguard.h>
 
 #define EXAMPLE_ESP_WIFI_SSID CONFIG_ESP_WIFI_SSID
@@ -102,7 +103,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 }
 
 #ifdef CONFIG_WIREGUARD_ESP_TCPIP_ADAPTER
-static esp_err_t wifi_init_tcpip_adaptor(void) {
+esp_err_t wifi_init_tcpip_adaptor(void) {
   esp_err_t err = ESP_FAIL;
   s_wifi_event_group = xEventGroupCreate();
 
@@ -171,7 +172,7 @@ fail:
 #endif // CONFIG_WIREGUARD_ESP_TCPIP_ADAPTER
 
 #ifdef CONFIG_WIREGUARD_ESP_NETIF
-static esp_err_t wifi_init_netif(void) {
+esp_err_t wifi_init_netif(void) {
   esp_err_t err = ESP_FAIL;
   esp_netif_t *sta_netif;
 
@@ -202,9 +203,7 @@ static esp_err_t wifi_init_netif(void) {
                * not advisable to be used. Incase your Access point doesn't
                * support WPA2, these mode can be enabled by commenting below
                * line */
-              .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-
-              .pmf_cfg = {.capable = true, .required = false},
+              // .threshold.authmode = WIFI_AUTH_WPA2_PSK,
           },
   };
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -254,7 +253,7 @@ fail:
 }
 #endif // CONFIG_WIREGUARD_ESP_NETIF
 
-static esp_err_t wifi_init_sta(void) {
+esp_err_t wifi_init_sta(void) {
 #if defined(CONFIG_WIREGUARD_ESP_TCPIP_ADAPTER)
   return wifi_init_tcpip_adaptor();
 #endif
@@ -349,18 +348,6 @@ void wg_ping(void) {
   esp_log_level_set("esp_wireguard", ESP_LOG_DEBUG);
   esp_log_level_set("wireguardif", ESP_LOG_DEBUG);
   esp_log_level_set("wireguard", ESP_LOG_DEBUG);
-  err = nvs_flash_init();
-#if defined(CONFIG_IDF_TARGET_ESP8266) &&                                      \
-    ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(3, 4, 0)
-  if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
-#else
-  if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
-      err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-#endif
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    err = nvs_flash_init();
-  }
-  ESP_ERROR_CHECK(err);
 
   err = wifi_init_sta();
   if (err != ESP_OK) {
